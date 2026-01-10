@@ -33,7 +33,7 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE
+# 3. CINEMATIC CSS ENGINE (THE VISUALS)
 # ==========================================
 st.markdown("""
 <style>
@@ -96,6 +96,9 @@ st.markdown("""
     .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; letter-spacing: 1px; }
     .stButton button:hover { transform: scale(1.05); box-shadow: 0 0 30px white; }
     
+    .disconnect-btn button { background: transparent !important; border: 1px solid #ef4444 !important; color: #ef4444 !important; font-size: 0.8rem; padding: 5px 15px; height: auto; }
+    .streamlit-expanderHeader { background-color: rgba(255,255,255,0.05); color: #e2e8f0; border-radius: 10px; }
+
     @keyframes fadeIn { to { opacity: 1; } }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 </style>
@@ -168,43 +171,42 @@ def show_main_app():
                 return f"Error: Status Code {response.status_code}"
         except Exception as e: return f"Connection Error: {str(e)}"
 
-    # --- 2. AI AGENT (HYBRID MODE) ---
+    # --- 2. AI AGENT (DEBUG MODE) ---
     def run_ai_agent_universal(content, api_key):
-        # If no key, default to SIMULATION
+        # 1. Check if Key Exists
         if not api_key: 
-            return generate_simulated_response(content)
+            return "⚠️ NO API KEY FOUND. Please add GEMINI_API_KEY to Streamlit Secrets."
 
         api_key = api_key.strip()
-        models_to_try = ["gemini-1.5-flash", "gemini-pro"]
-
-        for model_name in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            headers = {'Content-Type': 'application/json'}
-            prompt = f"Analyze this website content: '{content}'. Act as a sales expert. Write a highly personalized cold email pitching AI automation services to this specific company. Keep it under 150 words. Be professional but high-tech."
-            payload = { "contents": [{ "parts": [{"text": prompt}] }] }
-            try:
-                response = requests.post(url, headers=headers, json=payload)
-                if response.status_code == 200:
-                    return response.json()['candidates'][0]['content']['parts'][0]['text']
-            except: continue
+        model_name = "gemini-1.5-flash"
         
-        # If real AI fails, fallback to simulation
-        return generate_simulated_response(content)
-
-    def generate_simulated_response(content):
-        return f"""
-        [SIMULATION MODE - CONNECT API KEY FOR REAL AI]
+        # 2. Prepare the Request
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        prompt = f"Analyze this website content: '{content[:2000]}'. Act as a sales expert. Write a cold email pitching AI automation. Keep it under 150 words."
+        payload = { "contents": [{ "parts": [{"text": prompt}] }] }
         
-        Dear {content[:15]} Team,
-
-        I analyzed your digital footprint and identified 3 key inefficiencies in your workflow.
-        Novus Flow can automate your customer intake by 40% using autonomous agents.
-
-        Can we deploy a pilot test next week?
-
-        Best,
-        Novus Agent
-        """
+        # 3. Try to Connect (WITH LOUD ERRORS)
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            
+            # If Success (200 OK)
+            if response.status_code == 200:
+                return response.json()['candidates'][0]['content']['parts'][0]['text']
+            
+            # If Failure - RETURN THE ERROR MESSAGE
+            else:
+                return f"""
+                ⚠️ GOOGLE CONNECTION FAILED
+                ---------------------------
+                Error Code: {response.status_code}
+                Reason: {response.text}
+                
+                (Common Fixes: Check for spaces in key, or check if key is active in Google AI Studio)
+                """
+                
+        except Exception as e:
+            return f"⚠️ PYTHON SYSTEM ERROR: {str(e)}"
 
     # --- HEADER ---
     c_title, c_log = st.columns([4, 1])
