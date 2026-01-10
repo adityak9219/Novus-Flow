@@ -30,9 +30,11 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "home_messages" not in st.session_state:
+    st.session_state.home_messages = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE
+# 3. CINEMATIC CSS ENGINE (FULL VERSION)
 # ==========================================
 st.markdown("""
 <style>
@@ -49,7 +51,7 @@ st.markdown("""
         background: radial-gradient(circle at 50% 50%, #111827 0%, #000000 100%);
     }
     
-    /* NEBULA BACKGROUND */
+    /* NEBULA BACKGROUND ANIMATION */
     .stApp::before {
         content: "";
         position: absolute;
@@ -64,48 +66,42 @@ st.markdown("""
     }
     @keyframes nebulaMove { 0% { transform: rotate(0deg) scale(1); } 100% { transform: rotate(5deg) scale(1.1); } }
 
-    /* HERO ANIMATIONS */
-    .hero-container { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 10; }
+    /* HERO ANIMATIONS (SPLIT TEXT) */
+    .hero-container { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; perspective: 1000px; z-index: 10; }
+    .thunder-wrapper { position: absolute; z-index: 20; animation: thunderPulse 4s infinite ease-in-out; }
+    .thunder-svg-hero { width: 150px; height: 150px; filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8)); }
+    .title-wrapper { display: flex; align-items: center; gap: 20px; z-index: 10; overflow: hidden; }
     
-    /* THE THUNDERBOLT LOGO */
-    .thunder-main { 
-        font-size: 80px; 
-        filter: drop-shadow(0 0 30px #00d4ff); 
-        animation: pulseBolt 2s infinite ease-in-out;
-        margin-bottom: 20px;
-        cursor: pointer;
-    }
-    @keyframes pulseBolt { 0% { transform: scale(1); filter: drop-shadow(0 0 20px #00d4ff); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 50px #ffffff); } 100% { transform: scale(1); filter: drop-shadow(0 0 20px #00d4ff); } }
+    .hero-text { font-family: 'Syncopate', sans-serif; font-weight: 700; font-size: 6rem; color: #ffffff; letter-spacing: -5px; opacity: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); }
+    
+    #text-left { animation: slideOutLeft 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
+    #text-right { animation: slideOutRight 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
+    
+    @keyframes slideOutLeft { 0% { transform: translateX(100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-right: 80px; } }
+    @keyframes slideOutRight { 0% { transform: translateX(-100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-left: 80px; } }
+    @keyframes thunderPulse { 0% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 80px #06b6d4); } 100% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } }
+    
+    .hero-subtitle-scroll { font-family: 'Space Grotesk', monospace; color: #94a3b8; margin-top: 50px; letter-spacing: 5px; font-size: 1rem; animation: fadeIn 3s ease-in 2s forwards; opacity: 0; }
 
-    /* TEXT STYLES */
-    .hero-text { font-family: 'Syncopate', sans-serif; font-weight: 700; font-size: 5rem; color: #ffffff; letter-spacing: -5px; text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); line-height: 1; }
-    .hero-sub { color: #94a3b8; font-size: 1.2rem; letter-spacing: 5px; margin-top: 20px; text-transform: uppercase; }
-
-    /* CARDS (RESTORED) */
-    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 80%; margin: 50px auto; z-index: 20; position: relative; }
-    .holo-card { 
-        background: rgba(255, 255, 255, 0.03); 
-        border: 1px solid rgba(255, 255, 255, 0.1); 
-        padding: 30px; 
-        border-radius: 15px; 
-        backdrop-filter: blur(10px); 
-        text-align: center;
-        transition: all 0.3s ease; 
-    }
-    .holo-card:hover { transform: translateY(-10px); border-color: #00d4ff; box-shadow: 0 0 30px rgba(0, 212, 255, 0.1); }
-    .holo-card h3 { font-family: 'Syncopate'; font-size: 1.2rem; margin-bottom: 10px; }
-    .holo-card p { color: #94a3b8; font-size: 0.9rem; }
-
+    /* HOLO CARDS (RESTORED) */
+    .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); transform: rotateX(10deg) scale(0.9); transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden; }
+    .holo-card:hover { transform: rotateX(0deg) scale(1.05) translateY(-20px); background: rgba(255, 255, 255, 0.07); box-shadow: 0 30px 60px -10px rgba(0, 200, 255, 0.2); border-color: #00d4ff; }
+    
     /* LOGIN PORTAL */
-    .portal-container { max-width: 400px; margin: 40px auto; padding: 2px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; }
-    .portal-inner { background: #000; border-radius: 28px; padding: 30px; text-align: center; }
+    .portal-container { position: relative; width: 100%; max-width: 450px; margin: 50px auto; padding: 3px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; animation: borderRotate 4s linear infinite; box-shadow: 0 0 50px rgba(37, 99, 235, 0.4); }
+    .portal-inner { background: #000; border-radius: 28px; padding: 50px; text-align: center; }
 
     /* UI OVERRIDES */
-    .stTextInput input { background: #111827 !important; border: 1px solid #334155 !important; color: white !important; text-align: center; }
-    .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; }
-    .stButton button:hover { box-shadow: 0 0 20px white; transform: scale(1.02); }
+    .stTextInput input { background: #111827 !important; border: 1px solid #334155 !important; color: white !important; text-align: center; letter-spacing: 3px; font-family: 'Space Grotesk'; }
+    .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; letter-spacing: 1px; }
+    .stButton button:hover { transform: scale(1.05); box-shadow: 0 0 30px white; }
+    
+    @keyframes fadeIn { to { opacity: 1; } }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" /><stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" /></linearGradient></defs></svg>', unsafe_allow_html=True)
 
 # ==========================================
 # 4. LOGIC (SELF HEALING BRAIN)
@@ -160,13 +156,23 @@ def ask_ai(prompt, api_key):
 def show_main_app():
     c_title, c_log = st.columns([4, 1])
     with c_title:
-        st.markdown("""<div style="display:flex;align-items:center;"><h2 style="font-family:Syncopate;margin:0;">NOVUS CORE</h2><span style="color:#4ade80;margin-left:15px;border:1px solid #4ade80;padding:2px 8px;border-radius:10px;font-size:0.7rem;">● ONLINE</span></div>""", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex; align-items:center;">
+            <h2 style="font-family:Syncopate; margin:0; font-size:2rem;">NOVUS CORE</h2>
+            <div style="color:#4ade80; margin-left:15px; border:1px solid #4ade80; padding:2px 10px; border-radius:10px; font-size:0.8rem;">● ONLINE</div>
+        </div>
+        """, unsafe_allow_html=True)
     with c_log:
-        if st.button("DISCONNECT"):
+        if st.button("TERMINATE LINK"):
             st.session_state['logged_in'] = False
             st.rerun()
 
-    st.markdown("<hr style='border:1px solid #334155; margin-bottom:20px;'>", unsafe_allow_html=True)
+    if st.session_state['api_key']:
+         st.success("SYSTEM ONLINE: NEURAL LINK ESTABLISHED")
+    else:
+         st.warning("⚠️ SYSTEM OFFLINE: CHECK API KEY")
+
+    st.markdown("<hr style='border:1px solid #334155; margin-bottom:30px;'>", unsafe_allow_html=True)
 
     t1, t2, t3, t4 = st.tabs(["[ SALES ]", "[ HR ]", "[ FINANCE ]", "[ NOVUS AI ]"])
 
@@ -176,85 +182,111 @@ def show_main_app():
         if st.button("EXECUTE SCAN"):
             with st.spinner("NEURAL AGENT DEPLOYED..."):
                 data = scrape_website(url)
-                final_prompt = f"Analyze website: '{data[:2000]}'. Act as sales expert. Write cold email pitching AI services. <150 words."
-                res = ask_ai(final_prompt, st.session_state['api_key'])
+                res = ask_ai(f"Analyze: '{data[:2000]}'. Write sales email.", st.session_state['api_key'])
                 st.session_state['current_result'] = res
                 st.session_state['current_url'] = url
-                st.markdown(f"""<div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:10px;">{res}</div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background:rgba(255,255,255,0.05);padding:25px;border-radius:15px;">{res}</div>""", unsafe_allow_html=True)
+
         if 'current_result' in st.session_state:
             if st.button("💾 SAVE LEAD"):
                 st.session_state['leads_db'].append({"Company": st.session_state['current_url'], "Status": "Ready", "Timestamp": time.strftime("%H:%M")})
-                st.success("SAVED")
-        if len(st.session_state['leads_db']) > 0:
-            st.dataframe(st.session_state['leads_db'], use_container_width=True)
+                st.success("SECURED")
+        if len(st.session_state['leads_db']) > 0: st.dataframe(st.session_state['leads_db'], use_container_width=True)
 
     with t2:
-        st.subheader("BIOMETRIC PARSING (SIMULATION)")
-        st.file_uploader("UPLOAD RESUME")
-    
+        st.subheader("BIOMETRIC PARSING")
+        if st.file_uploader("UPLOAD CANDIDATE DATA"):
+            with st.spinner("ANALYZING..."): time.sleep(2)
+            st.success("MATCH FOUND")
+            st.metric("MATCH SCORE", "98.4%", "ELITE TIER")
+
     with t3:
-        st.subheader("GLOBAL LEDGER (SIMULATION)")
-        st.metric("REVENUE", "$482K", "+14%")
+        st.subheader("GLOBAL LEDGER")
+        m1, m2 = st.columns(2)
+        m1.metric("REVENUE", "$482,000", "+14%")
+        m2.metric("PROFIT", "$370,000", "+22%")
+        st.line_chart([45, 48, 47, 52, 55, 59, 64, 61, 68, 72])
 
     with t4:
         st.subheader("NOVUS NEURAL INTERFACE")
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]): st.markdown(msg["content"])
+        for msg in st.session_state.messages: st.chat_message(msg["role"]).markdown(msg["content"])
         if prompt := st.chat_input("Query Novus AI..."):
-            with st.chat_message("user"): st.markdown(prompt)
+            st.chat_message("user").markdown(prompt)
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("assistant"):
-                resp = ask_ai(prompt, st.session_state['api_key'])
-                st.markdown(resp)
+            resp = ask_ai(prompt, st.session_state['api_key'])
+            st.chat_message("assistant").markdown(resp)
             st.session_state.messages.append({"role": "assistant", "content": resp})
 
 # ==========================================
-# 6. LANDING PAGE (RESTORED & UPGRADED)
+# 6. LANDING PAGE (FULL ANIMATION RESTORED)
 # ==========================================
 def show_landing_page():
-    # 1. HERO SECTION WITH THUNDERBOLT
+    # 1. THE BIG ANIMATION
     st.markdown("""
     <div class="hero-container">
-        <div class="thunder-main">⚡</div>
-        <div class="hero-text">NOVUS FLOW</div>
-        <div class="hero-sub">THE SINGULARITY IS HERE</div>
+        <div class="thunder-wrapper">
+            <svg class="thunder-svg-hero" viewBox="0 0 24 24" fill="url(#grad1)" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+        </div>
+        <div class="title-wrapper">
+            <div id="text-left" class="hero-text">NOVUS</div>
+            <div id="text-right" class="hero-text">FLOW</div>
+        </div>
+        <div class="hero-subtitle-scroll">SCROLL TO INITIALIZE NEURAL LINK</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. RESTORED CARDS (SALES, TALENT, RISK) + NEW AI CARD
-    st.markdown("""
-    <div class="card-grid">
-        <div class="holo-card">
-            <h3 style="color:#60a5fa;">SALES</h3>
-            <p>Autonomous Outreach Agent.</p>
-        </div>
-        <div class="holo-card">
-            <h3 style="color:#a78bfa;">TALENT</h3>
-            <p>Neural Candidate Matching.</p>
-        </div>
-        <div class="holo-card">
-            <h3 style="color:#f472b6;">NOVUS AI</h3>
-            <p>Direct Neural Link.</p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    c1, c2 = st.columns([1, 4])
+    with c2: st.markdown("""<div style="padding: 100px 0; font-size: 1.5rem; color: #94a3b8;">WE DO NOT BUILD TOOLS.<br>WE BUILD <span style="color:#3b82f6;">AGENCY.</span></div>""", unsafe_allow_html=True)
+
+    # 2. THE HOLO CARDS
+    col_a, col_b, col_c = st.columns(3)
+    with col_a: st.markdown("""<div class="holo-card"><h3 style="color:#60a5fa;">01 // SALES</h3><p>Autonomous Outreach.</p></div>""", unsafe_allow_html=True)
+    with col_b: st.markdown("""<div class="holo-card"><h3 style="color:#a78bfa;">02 // TALENT</h3><p>Neural Matching.</p></div>""", unsafe_allow_html=True)
+    with col_c: st.markdown("""<div class="holo-card"><h3 style="color:#f472b6;">03 // RISK</h3><p>Sentinel Mode.</p></div>""", unsafe_allow_html=True)
+
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
 
     # 3. LOGIN PORTAL
-    c1, c2, c3 = st.columns([1,1,1])
-    with c2:
+    c_center = st.columns([1, 1, 1])[1]
+    with c_center:
         st.markdown('<div class="portal-container"><div class="portal-inner">', unsafe_allow_html=True)
-        st.markdown('<h3 style="font-family:Syncopate; letter-spacing:2px; margin-bottom:15px; color:white;">ESTABLISH LINK</h3>', unsafe_allow_html=True)
-        password = st.text_input("ACCESS KEY", type="password", label_visibility="collapsed", placeholder="ENTER KEY")
+        st.markdown('<h3 style="font-family:Syncopate; letter-spacing:2px; margin-bottom:20px;">ESTABLISH LINK</h3>', unsafe_allow_html=True)
+        password = st.text_input("ENCRYPTION KEY", type="password", label_visibility="collapsed", placeholder="ENTER KEY")
         st.write("")
-        if st.button("CONNECT SYSTEM"):
+        if st.button("CONNECT"):
             if password == "aditya123":
+                with st.spinner("HANDSHAKE IN PROGRESS..."):
+                    time.sleep(1.5)
                 st.session_state['logged_in'] = True
                 st.rerun()
             else:
                 st.error("ACCESS DENIED")
         st.markdown('</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<br><div style='text-align:center; color:#334155; padding-bottom:50px;'>NOVUS TECHNOLOGIES © 2026</div>", unsafe_allow_html=True)
+    # 4. SECRET CHAT TRIGGER (The "Small Thunderbolt")
+    # Placing it on the bottom right as requested
+    st.write("")
+    st.write("")
+    col_l, col_r = st.columns([4, 1])
+    with col_r:
+        # The Secret Chat Box
+        with st.expander("⚡ NOVUS AI", expanded=False):
+            st.markdown("Use Neural Link:")
+            
+            # Mini Chat Display
+            for msg in st.session_state.home_messages:
+                st.caption(f"**{msg['role']}**: {msg['content']}")
+            
+            # Simple Input
+            home_prompt = st.text_input("Command...", key="home_chat_input")
+            if st.button("SEND", key="home_send"):
+                if home_prompt:
+                    st.session_state.home_messages.append({"role": "User", "content": home_prompt})
+                    ans = ask_ai(home_prompt, st.session_state['api_key'])
+                    st.session_state.home_messages.append({"role": "Novus", "content": ans})
+                    st.rerun()
+    
+    st.markdown("<br><br><div style='text-align:center; color:#334155;'>NOVUS TECHNOLOGIES © 2026 // SINGULARITY READY</div>", unsafe_allow_html=True)
 
 # ==========================================
 # 7. EXECUTION
