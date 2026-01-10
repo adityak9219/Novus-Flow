@@ -4,7 +4,6 @@ import time
 import json
 import random
 from bs4 import BeautifulSoup
-import google.generativeai as genai
 
 # ==========================================
 # 1. PAGE CONFIGURATION
@@ -33,7 +32,7 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE (THE VISUALS)
+# 3. CINEMATIC CSS ENGINE
 # ==========================================
 st.markdown("""
 <style>
@@ -178,7 +177,8 @@ def show_main_app():
             return "⚠️ NO API KEY FOUND. Please add GEMINI_API_KEY to Streamlit Secrets."
 
         api_key = api_key.strip()
-        model_name = "gemini-1.5-flash"
+        # CHANGED: Using 'gemini-pro' instead of 'gemini-1.5-flash' for better compatibility
+        model_name = "gemini-pro"
         
         # 2. Prepare the Request
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -201,8 +201,6 @@ def show_main_app():
                 ---------------------------
                 Error Code: {response.status_code}
                 Reason: {response.text}
-                
-                (Common Fixes: Check for spaces in key, or check if key is active in Google AI Studio)
                 """
                 
         except Exception as e:
