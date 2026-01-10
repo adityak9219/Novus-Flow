@@ -25,7 +25,10 @@ if 'active_module' not in st.session_state:
     st.session_state['active_module'] = 'Sales & Leads'
 if 'api_key' not in st.session_state:
     st.session_state['api_key'] = ''
-# NEW: Database for Leads
+# Check for Secret Key in Cloud
+if 'GEMINI_API_KEY' in st.secrets:
+    st.session_state['api_key'] = st.secrets['GEMINI_API_KEY']
+
 if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
@@ -93,9 +96,6 @@ st.markdown("""
     .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; letter-spacing: 1px; }
     .stButton button:hover { transform: scale(1.05); box-shadow: 0 0 30px white; }
     
-    .disconnect-btn button { background: transparent !important; border: 1px solid #ef4444 !important; color: #ef4444 !important; font-size: 0.8rem; padding: 5px 15px; height: auto; }
-    .streamlit-expanderHeader { background-color: rgba(255,255,255,0.05); color: #e2e8f0; border-radius: 10px; }
-
     @keyframes fadeIn { to { opacity: 1; } }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 </style>
@@ -168,10 +168,11 @@ def show_main_app():
                 return f"Error: Status Code {response.status_code}"
         except Exception as e: return f"Connection Error: {str(e)}"
 
-    # --- 2. AI AGENT (Simulation Fallback) ---
+    # --- 2. AI AGENT (HYBRID MODE) ---
     def run_ai_agent_universal(content, api_key):
-        # SIMULATION MODE if no key
-        if not api_key: return generate_simulated_response(content)
+        # If no key, default to SIMULATION
+        if not api_key: 
+            return generate_simulated_response(content)
 
         api_key = api_key.strip()
         models_to_try = ["gemini-1.5-flash", "gemini-pro"]
@@ -179,7 +180,7 @@ def show_main_app():
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             headers = {'Content-Type': 'application/json'}
-            prompt = f"Analyze website: '{content}'. Write cold email pitching AI services."
+            prompt = f"Analyze this website content: '{content}'. Act as a sales expert. Write a highly personalized cold email pitching AI automation services to this specific company. Keep it under 150 words. Be professional but high-tech."
             payload = { "contents": [{ "parts": [{"text": prompt}] }] }
             try:
                 response = requests.post(url, headers=headers, json=payload)
@@ -187,22 +188,23 @@ def show_main_app():
                     return response.json()['candidates'][0]['content']['parts'][0]['text']
             except: continue
         
+        # If real AI fails, fallback to simulation
         return generate_simulated_response(content)
 
     def generate_simulated_response(content):
         return f"""
-Dear {content[:15]} Team,
+        [SIMULATION MODE - CONNECT API KEY FOR REAL AI]
+        
+        Dear {content[:15]} Team,
 
-I've analyzed your digital footprint and found 3 key areas to automate your workflows.
-At Novus Flow, our autonomous agents can reduce your operational overhead by 40%.
+        I analyzed your digital footprint and identified 3 key inefficiencies in your workflow.
+        Novus Flow can automate your customer intake by 40% using autonomous agents.
 
-I have prepared a full audit of your site structure. Are you open to a brief walk-through next Tuesday?
+        Can we deploy a pilot test next week?
 
-Best regards,
-
-**Novus Autonomous Agent**
-*Generated via Neural Simulation Mode*
-"""
+        Best,
+        Novus Agent
+        """
 
     # --- HEADER ---
     c_title, c_log = st.columns([4, 1])
@@ -218,21 +220,19 @@ Best regards,
             st.session_state['logged_in'] = False
             st.rerun()
 
-    # --- API CONFIG ---
+    # --- API STATUS ---
     with st.expander("🔌 SYSTEM CONFIGURATION", expanded=False):
-        api_val = st.text_input("GEMINI API KEY", type="password", value=st.session_state['api_key'])
-        if api_val:
-            st.session_state['api_key'] = api_val
-            st.success("KEY LINKED")
+        if st.session_state['api_key'] and len(st.session_state['api_key']) > 10:
+             st.success("SYSTEM ONLINE: NEURAL LINK ESTABLISHED (API KEY SECURE)")
         else:
-            st.info("SIMULATION MODE ACTIVE")
+             st.info("RUNNING IN SIMULATION MODE (ADD KEY TO SECRETS)")
 
     st.markdown("<hr style='border:1px solid #334155; margin-bottom:30px;'>", unsafe_allow_html=True)
 
     # --- TABS ---
     t1, t2, t3 = st.tabs(["[ SALES ]", "[ HR ]", "[ FINANCE ]"])
 
-    # 1. SALES TAB (UPGRADED WITH DATABASE)
+    # 1. SALES TAB
     with t1:
         st.subheader("TARGET ACQUISITION")
         
