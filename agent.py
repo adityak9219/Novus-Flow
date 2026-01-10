@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. SESSION STATE & DATABASE
+# 2. SESSION STATE
 # ==========================================
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -30,7 +30,7 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE (VISUALS)
+# 3. CINEMATIC CSS ENGINE (RESTORED)
 # ==========================================
 st.markdown("""
 <style>
@@ -47,6 +47,7 @@ st.markdown("""
         background: radial-gradient(circle at 50% 50%, #111827 0%, #000000 100%);
     }
     
+    /* NEBULA BACKGROUND ANIMATION */
     .stApp::before {
         content: "";
         position: absolute;
@@ -65,16 +66,30 @@ st.markdown("""
         100% { transform: rotate(5deg) scale(1.1); }
     }
 
-    /* HERO & TEXT STYLES */
+    /* HERO ANIMATIONS (RESTORED) */
     .hero-container { height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; perspective: 1000px; z-index: 10; }
-    .hero-text { font-family: 'Syncopate', sans-serif; font-weight: 700; font-size: 5rem; color: #ffffff; letter-spacing: -5px; text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); }
+    .thunder-wrapper { position: absolute; z-index: 20; animation: thunderPulse 4s infinite ease-in-out; }
+    .thunder-svg-hero { width: 150px; height: 150px; filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8)); }
+    .title-wrapper { display: flex; align-items: center; gap: 20px; z-index: 10; overflow: hidden; }
     
+    .hero-text { font-family: 'Syncopate', sans-serif; font-weight: 700; font-size: 6rem; color: #ffffff; letter-spacing: -5px; opacity: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); }
+    
+    /* SLIDING TEXT ANIMATION */
+    #text-left { animation: slideOutLeft 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
+    #text-right { animation: slideOutRight 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
+    
+    @keyframes slideOutLeft { 0% { transform: translateX(100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-right: 80px; } }
+    @keyframes slideOutRight { 0% { transform: translateX(-100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-left: 80px; } }
+    @keyframes thunderPulse { 0% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 80px #06b6d4); } 100% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } }
+    
+    .hero-subtitle-scroll { font-family: 'Space Grotesk', monospace; color: #94a3b8; margin-top: 50px; letter-spacing: 5px; font-size: 1rem; animation: fadeIn 3s ease-in 2s forwards; opacity: 0; }
+
     /* CARDS */
-    .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); transition: all 0.3s ease; }
-    .holo-card:hover { transform: translateY(-10px); border-color: #00d4ff; box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
+    .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); transform: rotateX(10deg) scale(0.9); transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden; }
+    .holo-card:hover { transform: rotateX(0deg) scale(1.05) translateY(-20px); background: rgba(255, 255, 255, 0.07); box-shadow: 0 30px 60px -10px rgba(0, 200, 255, 0.2); border-color: #00d4ff; }
     
     /* LOGIN PORTAL */
-    .portal-container { max-width: 450px; margin: 50px auto; padding: 3px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; }
+    .portal-container { position: relative; width: 100%; max-width: 450px; margin: 50px auto; padding: 3px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; animation: borderRotate 4s linear infinite; box-shadow: 0 0 50px rgba(37, 99, 235, 0.4); }
     .portal-inner { background: #000; border-radius: 28px; padding: 50px; text-align: center; }
 
     /* UI ELEMENTS */
@@ -82,12 +97,15 @@ st.markdown("""
     .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; letter-spacing: 1px; }
     .stButton button:hover { transform: scale(1.05); box-shadow: 0 0 30px white; }
     
+    @keyframes fadeIn { to { opacity: 1; } }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" /><stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" /></linearGradient></defs></svg>', unsafe_allow_html=True)
+
 # ==========================================
-# 4. LOGIC ENGINE (THE BRAIN)
+# 4. LOGIC ENGINE (SELF-HEALING BRAIN)
 # ==========================================
 
 def scrape_website(url):
@@ -103,7 +121,7 @@ def scrape_website(url):
         return f"Error: Status Code {response.status_code}"
     except Exception as e: return f"Connection Error: {str(e)}"
 
-# --- NEW: AUTO-FIND WORKING MODEL (THE FIX) ---
+# --- AUTO-FIND WORKING MODEL (FIXES 404) ---
 def find_working_model(api_key):
     """Asks Google which models are available and picks the first valid one."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
@@ -118,7 +136,8 @@ def find_working_model(api_key):
                     return model['name'].replace('models/', '')
     except:
         pass
-    return "gemini-pro" # Fallback
+    # Fallback to standard pro if detection fails
+    return "gemini-pro"
 
 def run_ai_agent_universal(content, api_key):
     if not api_key: return "⚠️ NO API KEY FOUND in Secrets."
@@ -239,15 +258,26 @@ def show_main_app():
         st.success("AUDIT LOG: 0 Anomalies detected.")
 
 # ==========================================
-# 6. LANDING PAGE
+# 6. LANDING PAGE (ANIMATION RESTORED)
 # ==========================================
 def show_landing_page():
+    # RESTORED: The original split-text structure that connects to the CSS animations
     st.markdown("""
     <div class="hero-container">
-        <div class="hero-text">NOVUS FLOW</div>
-        <div style="color:#94a3b8; letter-spacing:5px; margin-top:20px;">SCROLL TO INITIALIZE NEURAL LINK</div>
+        <div class="thunder-wrapper">
+            <svg class="thunder-svg-hero" viewBox="0 0 24 24" fill="url(#grad1)" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+        </div>
+        <div class="title-wrapper">
+            <div id="text-left" class="hero-text">NOVUS</div>
+            <div id="text-right" class="hero-text">FLOW</div>
+        </div>
+        <div class="hero-subtitle-scroll">SCROLL TO INITIALIZE NEURAL LINK</div>
     </div>
     """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns([1, 4])
+    with c2:
+        st.markdown("""<div style="padding: 100px 0; font-size: 1.5rem; color: #94a3b8;">WE DO NOT BUILD TOOLS.<br>WE BUILD <span style="color:#3b82f6;">AGENCY.</span><br><br>Traditional software waits for input. Novus Flow anticipates intent.</div>""", unsafe_allow_html=True)
 
     col_a, col_b, col_c = st.columns(3)
     with col_a: st.markdown("""<div class="holo-card"><h3 style="color:#60a5fa;">01 // SALES</h3><p>Autonomous Outreach.</p></div>""", unsafe_allow_html=True)
@@ -272,7 +302,7 @@ def show_landing_page():
                 st.error("ACCESS DENIED")
         st.markdown('</div></div>', unsafe_allow_html=True)
     
-    st.markdown("<br><br><div style='text-align:center; color:#334155;'>NOVUS TECHNOLOGIES © 2026</div>", unsafe_allow_html=True)
+    st.markdown("<br><br><div style='text-align:center; color:#334155;'>NOVUS TECHNOLOGIES © 2026 // SINGULARITY READY</div>", unsafe_allow_html=True)
 
 # ==========================================
 # 7. EXECUTION
