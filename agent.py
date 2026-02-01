@@ -30,7 +30,7 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE (MOBILE OPTIMIZED)
+# 3. CINEMATIC CSS ENGINE (SMART RESPONSIVE FIX)
 # ==========================================
 st.markdown("""
 <style>
@@ -40,19 +40,19 @@ st.markdown("""
         font-family: 'Space Grotesk', sans-serif;
         color: #e2e8f0;
         background-color: #030712;
-        overflow-x: hidden;
+        overflow-x: hidden; /* Prevents side-scrolling */
     }
 
     .stApp {
         background: radial-gradient(circle at 50% 50%, #111827 0%, #000000 100%);
     }
     
-    /* HIDE STREAMLIT UI FOR APP-LIKE FEEL */
+    /* HIDE STREAMLIT UI */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* NEBULA BACKGROUND ANIMATION */
+    /* BACKGROUND NEBULA */
     .stApp::before {
         content: "";
         position: absolute;
@@ -71,7 +71,7 @@ st.markdown("""
         100% { transform: rotate(5deg) scale(1.1); }
     }
 
-    /* HERO ANIMATIONS (RESPONSIVE FIX) */
+    /* HERO CONTAINER */
     .hero-container { 
         height: 80vh; 
         display: flex; 
@@ -82,62 +82,81 @@ st.markdown("""
         perspective: 1000px; 
         z-index: 10; 
         width: 100%;
+        overflow: hidden; /* Keeps animation inside the box */
     }
-    .thunder-wrapper { position: absolute; z-index: 20; animation: thunderPulse 4s infinite ease-in-out; }
-    .thunder-svg-hero { width: 150px; height: 150px; filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8)); }
-    .title-wrapper { display: flex; align-items: center; gap: 2vw; z-index: 10; overflow: hidden; width: 100%; justify-content: center; }
     
-    /* --- MOBILE FIX IS HERE --- */
+    .thunder-wrapper { position: absolute; z-index: 20; animation: thunderPulse 4s infinite ease-in-out; }
+    .thunder-svg-hero { 
+        width: clamp(80px, 15vw, 150px); /* Responsive Logo Size */
+        height: clamp(80px, 15vw, 150px);
+        filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8)); 
+    }
+    
+    .title-wrapper { 
+        display: flex; 
+        align-items: center; 
+        gap: 15px; /* Fixed gap so letters don't drift apart */
+        z-index: 10; 
+        justify-content: center; 
+        width: 100%;
+    }
+    
+    /* --- THE TEXT SIZE FIX --- */
     .hero-text { 
         font-family: 'Syncopate', sans-serif; 
         font-weight: 700; 
-        /* CHANGE: Use vw (viewport width) instead of rem so it shrinks on phone */
-        font-size: 13vw; 
+        /* CLAMP: Min 40px (Phone), Ideal 10vw (Tablet), Max 110px (Desktop) */
+        font-size: clamp(40px, 10vw, 110px); 
         color: #ffffff; 
         letter-spacing: -2px; 
         opacity: 0; 
+        white-space: nowrap; /* Forces text to stay on one line */
         text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); 
     }
     
-    /* SLIDING TEXT ANIMATION */
+    /* ANIMATION */
     #text-left { animation: slideOutLeft 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
     #text-right { animation: slideOutRight 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards; }
     
-    @keyframes slideOutLeft { 0% { transform: translateX(100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-right: 4vw; } }
-    @keyframes slideOutRight { 0% { transform: translateX(-100%) scale(0.5); opacity: 0; filter: blur(20px); } 100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-left: 4vw; } }
+    @keyframes slideOutLeft { 
+        0% { transform: translateX(50%) scale(0.5); opacity: 0; filter: blur(20px); } 
+        100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-right: 20px; } 
+    }
+    @keyframes slideOutRight { 
+        0% { transform: translateX(-50%) scale(0.5); opacity: 0; filter: blur(20px); } 
+        100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-left: 20px; } 
+    }
+    
     @keyframes thunderPulse { 0% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 80px #06b6d4); } 100% { transform: scale(1); filter: drop-shadow(0 0 30px #2563eb); } }
     
     .hero-subtitle-scroll { 
         font-family: 'Space Grotesk', monospace; 
         color: #94a3b8; 
-        margin-top: 50px; 
-        letter-spacing: 5px; 
-        font-size: clamp(0.8rem, 2vw, 1rem); 
+        margin-top: 30px; 
+        letter-spacing: 3px; 
+        font-size: clamp(0.7rem, 2vw, 1rem); 
         text-align: center;
         animation: fadeIn 3s ease-in 2s forwards; 
         opacity: 0; 
-        padding: 0 20px;
+        padding: 0 10px;
     }
 
     /* CARDS */
     .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); transform: rotateX(10deg) scale(0.9); transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden; }
     .holo-card:hover { transform: rotateX(0deg) scale(1.05) translateY(-20px); background: rgba(255, 255, 255, 0.07); box-shadow: 0 30px 60px -10px rgba(0, 200, 255, 0.2); border-color: #00d4ff; }
     
-    /* LOGIN PORTAL */
     .portal-container { position: relative; width: 100%; max-width: 450px; margin: 50px auto; padding: 3px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; animation: borderRotate 4s linear infinite; box-shadow: 0 0 50px rgba(37, 99, 235, 0.4); }
     .portal-inner { background: #000; border-radius: 28px; padding: 50px; text-align: center; }
 
-    /* UI ELEMENTS */
     .stTextInput input { background: #111827 !important; border: 1px solid #334155 !important; color: white !important; text-align: center; letter-spacing: 3px; font-family: 'Space Grotesk'; }
     .stButton button { background: white; color: black; font-weight: 700; border-radius: 50px; height: 50px; border: none; width: 100%; font-family: 'Syncopate'; letter-spacing: 1px; }
     .stButton button:hover { transform: scale(1.05); box-shadow: 0 0 30px white; }
     
-    /* MOBILE SPECIFIC ADJUSTMENTS */
+    /* MOBILE ADJUSTMENTS */
     @media only screen and (max-width: 600px) {
         .holo-card { padding: 20px; margin-bottom: 20px; transform: none; }
-        .holo-card:hover { transform: translateY(-5px); }
-        .portal-inner { padding: 30px 20px; }
         .hero-container { height: 60vh; }
+        .title-wrapper { gap: 5px; } /* Smaller gap on phone */
     }
     
     @keyframes fadeIn { to { opacity: 1; } }
@@ -303,7 +322,6 @@ def show_main_app():
 # 6. LANDING PAGE (ANIMATION RESTORED)
 # ==========================================
 def show_landing_page():
-    # RESTORED: The original split-text structure that connects to the CSS animations
     st.markdown("""
     <div class="hero-container">
         <div class="thunder-wrapper">
