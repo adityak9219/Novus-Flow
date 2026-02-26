@@ -2,3 +2,9 @@ streamlit
 google-generativeai
 requests
 beautifulsoup4
+streamlit
+google-generativeai
+requests
+beautifulsoup4
+PyPDF2
+python-docx
