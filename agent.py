@@ -34,7 +34,7 @@ if 'leads_db' not in st.session_state:
     st.session_state['leads_db'] = []
 
 # ==========================================
-# 3. CINEMATIC CSS ENGINE
+# 3. CINEMATIC CSS ENGINE (FIXED LOGO POSITION)
 # ==========================================
 st.markdown("""
 <style>
@@ -50,10 +50,8 @@ st.markdown("""
         background: radial-gradient(circle at 50% 50%, #111827 0%, #000000 100%);
     }
 
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
+    #MainMenu, footer, header {visibility: hidden;}
+
     .hero-container { 
         height: 80vh; 
         display: flex; 
@@ -75,7 +73,7 @@ st.markdown("""
 
     .thunder-svg-hero { 
         width: clamp(80px, 15vw, 150px);
-        filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8)); 
+        filter: drop-shadow(0 0 50px rgba(59, 130, 246, 0.8));
         z-index: 20;
         animation: thunderPulse 4s infinite ease-in-out;
     }
@@ -85,7 +83,6 @@ st.markdown("""
         font-weight: 700; 
         font-size: clamp(40px, 10vw, 110px); 
         color: #ffffff; 
-        letter-spacing: -2px; 
         opacity: 0; 
         white-space: nowrap;
     }
@@ -102,30 +99,28 @@ st.markdown("""
         100% { transform: translateX(0%) scale(1); opacity: 1; filter: blur(0px); margin-left: 20px; } 
     }
 
-    @keyframes thunderPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes thunderPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
     .hero-subtitle-scroll { 
-        font-family: 'Space Grotesk', monospace; 
+        font-family: 'Space Grotesk'; 
         color: #94a3b8; 
         margin-top: 30px; 
-        letter-spacing: 3px; 
-        font-size: clamp(0.7rem, 2vw, 1rem); 
+        letter-spacing: 4px; 
         animation: fadeIn 3s ease-in 2s forwards; 
         opacity: 0; 
     }
 
-    .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
-    .portal-container { position: relative; width: 100%; max-width: 450px; margin: 50px auto; padding: 3px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 30px; }
-    .portal-inner { background: #000; border-radius: 28px; padding: 50px; text-align: center; }
-
+    .holo-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 15px; backdrop-filter: blur(10px); }
+    .portal-container { max-width: 400px; margin: auto; padding: 2px; background: linear-gradient(90deg, #2563eb, #d946ef); border-radius: 15px; }
+    .portal-inner { background: #000; border-radius: 13px; padding: 30px; text-align: center; }
     @keyframes fadeIn { to { opacity: 1; } }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" /><stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" /></linearGradient></defs></svg>', unsafe_allow_html=True)
+st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradient id="grad1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs></svg>', unsafe_allow_html=True)
 
 # ==========================================
-# 4. LOGIC ENGINE (FIXES 404 ERROR)
+# 4. LOGIC ENGINE (AUTO-RECOVERY MODELS)
 # ==========================================
 
 def scrape_website(url):
@@ -154,11 +149,10 @@ def extract_text_from_file(uploaded_file):
             for para in doc.paragraphs:
                 text += para.text + "\n"
         return text
-    except Exception as e:
-        return ""
+    except: return ""
 
 def run_ai_agent(prompt, api_key):
-    # This list tries multiple models to ensure we don't get a 404
+    # This list tries multiple models to bypass the 404 error
     models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
     
     for model in models_to_try:
@@ -170,7 +164,7 @@ def run_ai_agent(prompt, api_key):
                 return response.json()['candidates'][0]['content']['parts'][0]['text']
         except:
             continue
-    return "Error: Could not connect to AI. Please check your API Key and network."
+    return "Error: Could not connect to AI. Please verify your API Key in Streamlit Secrets."
 
 # ==========================================
 # 5. DASHBOARD UI
@@ -199,16 +193,19 @@ def show_main_app():
         if st.button("EXECUTE SCAN"):
             with st.spinner("NEURAL AGENT DEPLOYED..."):
                 web_content = scrape_website(url)
-                res = run_ai_agent(f"Analyze this company content: {web_content}. Write a short cold email pitching AI automation.", st.session_state['api_key'])
-                st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
+                if web_content:
+                    res = run_ai_agent(f"Analyze this content: {web_content}. Write a short cold email for AI services.", st.session_state['api_key'])
+                    st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
+                else:
+                    st.error("Could not read website. Please check the URL.")
 
     with t2:
         st.subheader("BIOMETRIC RESUME PARSING")
         uploaded_file = st.file_uploader("Upload Candidate CV", type=['pdf', 'docx'])
         if uploaded_file and st.button("EXECUTE NEURAL EVALUATION"):
-            with st.spinner("ANALYZING..."):
+            with st.spinner("ANALYZING DNA SEQUENCE..."):
                 resume_text = extract_text_from_file(uploaded_file)
-                res = run_ai_agent(f"Analyze this resume: {resume_text[:3000]}", st.session_state['api_key'])
+                res = run_ai_agent(f"Summarize this resume and match skills: {resume_text[:3000]}", st.session_state['api_key'])
                 st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
 
     with t3:
@@ -222,9 +219,7 @@ def show_landing_page():
     <div class="hero-container">
         <div class="title-wrapper">
             <div id="text-left" class="hero-text">NOVUS</div>
-            <svg class="thunder-svg-hero" viewBox="0 0 24 24" fill="url(#grad1)" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
-            </svg>
+            <svg class="thunder-svg-hero" viewBox="0 0 24 24" fill="url(#grad1)"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
             <div id="text-right" class="hero-text">FLOW</div>
         </div>
         <div class="hero-subtitle-scroll">SCROLL TO INITIALIZE NEURAL LINK</div>
