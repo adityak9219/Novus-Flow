@@ -3,7 +3,15 @@ import requests
 import time
 import json
 import random
+import io
 from bs4 import BeautifulSoup
+
+# Helper libraries for HR file reading
+try:
+    import PyPDF2
+    from docx import Document
+except ImportError:
+    pass
 
 # ==========================================
 # 1. PAGE CONFIGURATION
@@ -82,7 +90,6 @@ st.markdown("""
         overflow: hidden; 
     }
     
-    /* LOGO CENTERING FIX */
     .thunder-wrapper { 
         position: relative; 
         z-index: 20; 
@@ -170,6 +177,21 @@ st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradi
 # 4. LOGIC ENGINE
 # ==========================================
 
+def extract_text_from_file(uploaded_file):
+    text = ""
+    try:
+        if uploaded_file.type == "application/pdf":
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            doc = Document(uploaded_file)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        return text
+    except:
+        return ""
+
 def scrape_website(url):
     try:
         if not url.startswith('http'): url = 'https://' + url
@@ -183,32 +205,20 @@ def scrape_website(url):
         return f"Error: Status Code {response.status_code}"
     except Exception as e: return f"Connection Error: {str(e)}"
 
-def find_working_model(api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            for model in data.get('models', []):
-                if 'generateContent' in model.get('supportedGenerationMethods', []):
-                    return model['name'].replace('models/', '')
-    except: pass
-    return "gemini-pro"
-
 def run_ai_agent_universal(content, api_key):
     if not api_key: return "⚠️ NO API KEY FOUND in Secrets."
     api_key = api_key.strip()
-    model_name = find_working_model(api_key)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    
+    # Updated to gemini-1.5-flash for reliability
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
-    prompt = f"Analyze website content: '{content[:2000]}'. Act as a sales expert. Write a cold email pitching AI automation services. Keep it under 150 words. Be professional and persuasive."
-    payload = { "contents": [{ "parts": [{"text": prompt}] }] }
+    payload = { "contents": [{ "parts": [{"text": content}] }] }
     try:
         response = requests.post(url, headers=headers, json=payload)
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
-        else: return f"⚠️ GOOGLE ERROR {response.status_code}: {response.text}"
-    except Exception as e: return f"⚠️ SYSTEM ERROR: {str(e)}"
+        else: return f"⚠️ Error {response.status_code}"
+    except Exception as e: return f"⚠️ Error: {str(e)}"
 
 # ==========================================
 # 5. DASHBOARD UI
@@ -232,12 +242,20 @@ def show_main_app():
         if st.button("EXECUTE SCAN"):
             with st.spinner("NEURAL AGENT DEPLOYED..."):
                 data = scrape_website(url)
-                res = run_ai_agent_universal(data, st.session_state['api_key'])
-                st.session_state['current_result'] = res
-                st.session_state['current_url'] = url
-                st.markdown(f"""<div style="background: rgba(255,255,255,0.05); border:1px solid #334155; border-radius:15px; padding:25px; margin-top:20px; margin-bottom:20px;"><div style="border-bottom:1px solid #334155; padding-bottom:10px; margin-bottom:10px; color:#94a3b8;">TO: <span style="color:white;">{url}</span> <br> FROM: <span style="color:#4ade80;">NOVUS AGENT</span></div><div style="color:#e2e8f0; white-space: pre-wrap; font-family: sans-serif;">{res}</div></div>""", unsafe_allow_html=True)
+                prompt = f"Analyze website content: '{data[:2000]}'. Act as a sales expert. Write a cold email pitching AI automation services."
+                res = run_ai_agent_universal(prompt, st.session_state['api_key'])
+                st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
 
-    with t2: st.subheader("BIOMETRIC PARSING")
+    with t2:
+        st.subheader("BIOMETRIC RESUME PARSING")
+        uploaded_file = st.file_uploader("Upload CV (PDF/DOCX)", type=['pdf', 'docx'])
+        if uploaded_file and st.button("ANALYZE CANDIDATE"):
+            with st.spinner("NEURAL EVALUATION IN PROGRESS..."):
+                resume_text = extract_text_from_file(uploaded_file)
+                prompt = f"Analyze this resume and provide a summary of skills and a match score: {resume_text[:3000]}"
+                res = run_ai_agent_universal(prompt, st.session_state['api_key'])
+                st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
+
     with t3: st.subheader("GLOBAL LEDGER")
 
 # ==========================================
