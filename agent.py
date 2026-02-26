@@ -2,8 +2,15 @@ import streamlit as st
 import requests
 import time
 import json
-import random
+import io
 from bs4 import BeautifulSoup
+
+# Import libraries for HR Resume Parsing
+try:
+    import PyPDF2
+    from docx import Document
+except ImportError:
+    pass
 
 # ==========================================
 # 1. PAGE CONFIGURATION
@@ -118,27 +125,57 @@ st.markdown("""
 st.markdown('<svg style="width:0;height:0;position:absolute;"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" /><stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" /></linearGradient></defs></svg>', unsafe_allow_html=True)
 
 # ==========================================
-# 4. LOGIC ENGINE
+# 4. LOGIC ENGINE (FIXES 404 ERROR)
 # ==========================================
 
-def run_ai_agent(prompt, api_key):
-    # Updated to gemini-1.5-flash to fix the 404 error
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    payload = { "contents": [{ "parts": [{"text": prompt}] }] }
+def scrape_website(url):
     try:
-        response = requests.post(url, json=payload, timeout=15)
+        if not url.startswith('http'): url = 'https://' + url
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            return response.json()['candidates'][0]['content']['parts'][0]['text']
-        else:
-            return f"Error: {response.status_code}. Check your API Key."
+            soup = BeautifulSoup(response.content, 'html.parser')
+            text = ""
+            for tag in soup.find_all(['h1', 'h2', 'p']): 
+                text += tag.get_text(strip=True) + " "
+            return text[:3000]
+        return ""
+    except: return ""
+
+def extract_text_from_file(uploaded_file):
+    text = ""
+    try:
+        if uploaded_file.type == "application/pdf":
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            doc = Document(uploaded_file)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        return text
     except Exception as e:
-        return f"System Error: {str(e)}"
+        return ""
+
+def run_ai_agent(prompt, api_key):
+    # This list tries multiple models to ensure we don't get a 404
+    models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+    
+    for model in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        payload = { "contents": [{ "parts": [{"text": prompt}] }] }
+        try:
+            response = requests.post(url, json=payload, timeout=15)
+            if response.status_code == 200:
+                return response.json()['candidates'][0]['content']['parts'][0]['text']
+        except:
+            continue
+    return "Error: Could not connect to AI. Please check your API Key and network."
 
 # ==========================================
 # 5. DASHBOARD UI
 # ==========================================
 def show_main_app():
-    # --- RESTORED HEADER WITH TERMINATE LINK ---
     c_title, c_log = st.columns([4, 1])
     with c_title:
         st.markdown("""
@@ -161,15 +198,18 @@ def show_main_app():
         url = st.text_input("Enter Company URL")
         if st.button("EXECUTE SCAN"):
             with st.spinner("NEURAL AGENT DEPLOYED..."):
-                res = run_ai_agent(f"Analyze this company {url} and write a cold email.", st.session_state['api_key'])
-                st.write(res)
+                web_content = scrape_website(url)
+                res = run_ai_agent(f"Analyze this company content: {web_content}. Write a short cold email pitching AI automation.", st.session_state['api_key'])
+                st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
 
     with t2:
         st.subheader("BIOMETRIC RESUME PARSING")
-        if st.button("EXECUTE NEURAL EVALUATION"):
+        uploaded_file = st.file_uploader("Upload Candidate CV", type=['pdf', 'docx'])
+        if uploaded_file and st.button("EXECUTE NEURAL EVALUATION"):
             with st.spinner("ANALYZING..."):
-                res = run_ai_agent("Analyze the uploaded resume.", st.session_state['api_key'])
-                st.write(res)
+                resume_text = extract_text_from_file(uploaded_file)
+                res = run_ai_agent(f"Analyze this resume: {resume_text[:3000]}", st.session_state['api_key'])
+                st.markdown(f'<div class="holo-card">{res}</div>', unsafe_allow_html=True)
 
     with t3:
         st.metric("REVENUE", "$482,000", "+14%")
